@@ -20,15 +20,27 @@ features = [ "smoltcp-phy", "nucleo-f429zi" ]
 [dependencies]
 volatile-register = "0.2"
 aligned = "0.3"
-stm32f4xx-hal = "0.7"
-
+stm32f4xx-hal = { version = "0.7", optional = true }
 smoltcp = { version = "0.6.0", default-features = false, features = ["proto-ipv4", "proto-ipv6", "socket-icmp", "socket-udp", "socket-tcp", "log", "verbose", "ethernet"], optional = true }
 log = { version = "0.4", optional = true }
+
+[dependencies.stm32f1]
+path = "../stm32-rs/stm32f1"
+version = "*"
+optional = true
+
+[dependencies.stm32f1xx-hal]
+path = "../stm32f1xx-hal"
+version = "*"
+features = ["rt", "stm32f107", "connectivity"]
+optional = true
 
 [features]
 smoltcp-phy = ["smoltcp", "log"]
 default = []
 nucleo-f429zi = ["stm32f4xx-hal/stm32f429"]
+stm32f4xx = ["stm32f4xx-hal"]
+stm32f107 = ["stm32f1", "stm32f1xx-hal"]
 
 [dev-dependencies]
 cortex-m = "0.5"

@@ -1,4 +1,8 @@
 use core::ops::{Deref, DerefMut};
+
+#[cfg(feature = "stm32f107")]
+use stm32f1::stm32f107::ETHERNET_DMA;
+#[cfg(feature = "stm32f4xx")]
 use stm32f4xx_hal::stm32::ETHERNET_DMA;
 
 use crate::{

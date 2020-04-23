@@ -1,9 +1,8 @@
 #![no_std]
 
-/// Re-export
-pub use stm32f4xx_hal as hal;
-/// Re-export
-pub use stm32f4xx_hal::stm32;
+#[cfg(feature = "stm32f107")]
+use stm32f1xx_hal::stm32::{Interrupt, ETHERNET_DMA, ETHERNET_MAC, NVIC};
+#[cfg(feature = "stm32f4xx")]
 use stm32f4xx_hal::stm32::{Interrupt, ETHERNET_DMA, ETHERNET_MAC, NVIC};
 
 pub mod phy;
@@ -102,6 +101,7 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
         self.get_phy().reset().set_autoneg();
 
         // Configuration Register
+        #[cfg(feature = "stm32f4xx")]
         self.eth_mac.maccr.modify(|_, w| {
             // CRC stripping for Type frames
             w.cstf()
@@ -125,6 +125,28 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
                 .te()
                 .set_bit()
         });
+        #[cfg(feature = "stm32f107")]
+        self.eth_mac.maccr.modify(|_, w| {
+            // Fast Ethernet speed
+            w.fes()
+                .set_bit()
+                // Duplex mode
+                .dm()
+                .set_bit()
+                // Automatic pad/CRC stripping
+                .apcs()
+                .set_bit()
+                // Retry disable in half-duplex mode
+                .rd()
+                .set_bit()
+                // Receiver enable
+                .re()
+                .set_bit()
+                // Transmitter enable
+                .te()
+                .set_bit()
+        });
+
         // frame filter register
         self.eth_mac.macffr.modify(|_, w| {
             // Receive All

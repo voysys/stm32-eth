@@ -1,3 +1,8 @@
+#[cfg(feature = "stm32f107")]
+use stm32f1::stm32f107::{AFIO, RCC};
+#[cfg(feature = "stm32f4xx")]
+use stm32f4xx_hal::stm32::{RCC, SYSCFG};
+
 #[cfg(feature = "nucleo-f429zi")]
 use stm32f4xx_hal::gpio::{
     gpioa::{PA1, PA2, PA7},
@@ -6,12 +11,12 @@ use stm32f4xx_hal::gpio::{
     gpiog::{PG11, PG13},
     Speed::VeryHigh,
 };
-use stm32f4xx_hal::stm32::{RCC, SYSCFG};
 
 /// Initialize GPIO pins. Enable syscfg and ethernet clocks. Reset the
 /// Ethernet MAC.
 ///
 /// If supported, you should also call `setup_pins()`.
+#[cfg(feature = "stm32f4xx")]
 pub fn setup(rcc: &RCC, syscfg: &SYSCFG) {
     // enable syscfg clock
     rcc.apb2enr.modify(|_, w| w.syscfgen().set_bit());
@@ -32,10 +37,34 @@ pub fn setup(rcc: &RCC, syscfg: &SYSCFG) {
 
     reset_pulse(&rcc);
 }
+#[cfg(feature = "stm32f107")]
+pub fn setup(rcc: &RCC, afio: &AFIO) {
+    // select MII or RMII mode
+    // 0 = MII, 1 = RMII
+    afio.mapr.modify(|_, w| w.mii_rmii_sel().set_bit());
 
+    // enable ethernet clocks
+    rcc.ahbenr.modify(|_, w| {
+        w.ethmacen()
+            .set_bit()
+            .ethmactxen()
+            .set_bit()
+            .ethmacrxen()
+            .set_bit()
+    });
+
+    reset_pulse(&rcc);
+}
+
+#[cfg(feature = "stm32f4xx")]
 fn reset_pulse(rcc: &RCC) {
     rcc.ahb1rstr.modify(|_, w| w.ethmacrst().set_bit());
     rcc.ahb1rstr.modify(|_, w| w.ethmacrst().clear_bit());
+}
+#[cfg(feature = "stm32f107")]
+fn reset_pulse(rcc: &RCC) {
+    rcc.ahbrstr.modify(|_, w| w.ethmacrst().set_bit());
+    rcc.ahbrstr.modify(|_, w| w.ethmacrst().clear_bit());
 }
 
 /// Pin setup for the **STM32 Nucleo-F429ZI** dev board
