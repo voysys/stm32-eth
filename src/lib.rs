@@ -115,7 +115,7 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
     }
 
     fn init(&mut self) -> &Self {
-        //self.reset_mac_and_wait();
+        self.reset_mac_and_wait();
 
         // set clock range in MAC MII address register
         #[cfg(feature = "stm32f107")]

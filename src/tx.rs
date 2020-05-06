@@ -187,7 +187,20 @@ impl<'a> TxRing<'a> {
         eth_dma.dmatdlar.write(|w| w.stl().bits(ring_ptr as u32));
 
         // Start transmission
-        eth_dma.dmaomr.modify(|_, w| w.st().set_bit());
+        eth_dma.dmaomr.modify(|_, w| {
+            w.st()
+                .set_bit()
+                .ttc()
+                .ttc16()
+                .tsf()
+                .clear_bit()
+                .fef()
+                .set_bit()
+                .fugf()
+                .set_bit()
+                .osf()
+                .set_bit()
+        });
     }
 
     pub fn send<F: FnOnce(&mut [u8]) -> R, R>(
