@@ -42,13 +42,9 @@ mod consts {
     pub const PHY_REG_SSR_100BASE_HD: u16 = 0b010 << 2;
     pub const PHY_REG_SSR_100BASE_FD: u16 = 0b110 << 2;
 }
+
 use self::consts::*;
 
-/// Driver for the *LAN8742* PHY using `SMI`
-///
-/// # References
-/// * [Datasheet](http://ww1.microchip.com/downloads/en/DeviceDoc/DS_LAN8742_00001989A.pdf)
-/// * [libopencm3 driver](https://github.com/libopencm3/libopencm3/blob/master/lib/ethernet/mac_stm32fxx7.c)
 pub struct Phy<'a> {
     smi: SMI<'a>,
     phy: u8,

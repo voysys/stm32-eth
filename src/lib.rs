@@ -5,8 +5,28 @@ use stm32f1xx_hal::stm32::{Interrupt, ETHERNET_DMA, ETHERNET_MAC, NVIC};
 #[cfg(feature = "stm32f4xx")]
 use stm32f4xx_hal::stm32::{Interrupt, ETHERNET_DMA, ETHERNET_MAC, NVIC};
 
-pub mod phy;
-use phy::{Phy, PhyStatus};
+// If no phy specified, print error message.
+#[cfg(not(any(feature = "dp83848", feature = "lan8742",)))]
+compile_error!("Phy not specified. A `--features <phy-name>` is required.");
+
+// If any two or more phy:s are specified, print error message.
+#[cfg(all(feature = "dp83848", feature = "lan8742"))]
+compile_error!("Multiple Phy:s specified. Only a single `--features <phy-name>` can be specified.");
+
+#[cfg(feature = "lan8742")]
+pub mod phy_lan8742;
+#[cfg(feature = "lan8742")]
+pub use phy_lan8742 as phy;
+#[cfg(feature = "lan8742")]
+use phy_lan8742::{Phy, PhyStatus};
+
+#[cfg(feature = "dp83848")]
+pub mod phy_dp83848;
+#[cfg(feature = "dp83848")]
+pub use phy_dp83848 as phy;
+#[cfg(feature = "dp83848")]
+use phy_dp83848::{Phy, PhyStatus};
+
 mod ring;
 mod smi;
 pub use ring::RingEntry;
@@ -29,7 +49,11 @@ mod smoltcp_phy;
 #[cfg(feature = "smoltcp-phy")]
 pub use smoltcp_phy::{EthRxToken, EthTxToken};
 
+#[cfg(feature = "lan8742")]
 const PHY_ADDR: u8 = 0;
+#[cfg(feature = "dp83848")]
+const PHY_ADDR: u8 = 1;
+
 /// From the datasheet: *VLAN Frame maxsize = 1522*
 const MTU: usize = 1522;
 
@@ -48,9 +72,10 @@ mod consts {
 }
 use self::consts::*;
 
-/// Ethernet driver for *STM32* chips with a *LAN8742*
-/// [`Phy`](phy/struct.Phy.html) like they're found on STM Nucleo-144
-/// boards.
+/// Ethernet driver for *STM32* chips.
+/// [`Phy`](phy/struct.Phy.html) can be selected via feature as:
+/// *lan8742* (e.g. on STM Nucleo-144 boards)
+/// *dp83848*
 pub struct Eth<'rx, 'tx> {
     eth_mac: ETHERNET_MAC,
     eth_dma: ETHERNET_DMA,
@@ -90,13 +115,20 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
     }
 
     fn init(&mut self) -> &Self {
-        self.reset_dma_and_wait();
+        //self.reset_mac_and_wait();
 
         // set clock range in MAC MII address register
-        let clock_range = ETH_MACMIIAR_CR_HCLK_DIV_16;
-        self.eth_mac
-            .macmiiar
-            .modify(|_, w| unsafe { w.cr().bits(clock_range) });
+        #[cfg(feature = "stm32f107")]
+        {
+            self.eth_mac.macmiiar.modify(|_, w| w.cr().cr_35_60());
+        }
+        #[cfg(feature = "stm32f4xx")]
+        {
+            let clock_range = ETH_MACMIIAR_CR_HCLK_DIV_16;
+            self.eth_mac
+                .macmiiar
+                .modify(|_, w| unsafe { w.cr().bits(clock_range) });
+        }
 
         self.get_phy().reset().set_autoneg();
 
@@ -207,8 +239,8 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
         self
     }
 
-    /// reset DMA bus mode register
-    fn reset_dma_and_wait(&self) {
+    /// reset all MAC subsystem internal registers and logic
+    fn reset_mac_and_wait(&self) {
         self.eth_dma.dmabmr.modify(|_, w| w.sr().set_bit());
 
         // Wait until done

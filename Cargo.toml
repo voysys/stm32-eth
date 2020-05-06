@@ -41,6 +41,8 @@ default = []
 nucleo-f429zi = ["stm32f4xx-hal/stm32f429"]
 stm32f4xx = ["stm32f4xx-hal"]
 stm32f107 = ["stm32f1", "stm32f1xx-hal"]
+dp83848 = []
+lan8742 = []
 
 [dev-dependencies]
 cortex-m = "0.5"
