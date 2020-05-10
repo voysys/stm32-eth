@@ -24,6 +24,9 @@ const TXDESC_0_TER: u32 = 1 << 21;
 const TXDESC_0_TCH: u32 = 1 << 20;
 /// Error status
 const TXDESC_0_ES: u32 = 1 << 15;
+/// Checksum insertion control
+const TXDESC_0_CIC1: u32 = 1 << 22;
+const TXDESC_0_CIC2: u32 = 1 << 23;
 
 const TXDESC_1_TBS_SHIFT: usize = 0;
 const TXDESC_1_TBS_MASK: u32 = 0x0fff << TXDESC_1_TBS_SHIFT;
@@ -44,7 +47,15 @@ impl Default for TxDescriptor {
     fn default() -> Self {
         let mut desc = Descriptor::default();
         unsafe {
-            desc.write(0, TXDESC_0_TCH | TXDESC_0_IC | TXDESC_0_FS | TXDESC_0_LS);
+            desc.write(
+                0,
+                TXDESC_0_TCH
+                    | TXDESC_0_IC
+                    | TXDESC_0_FS
+                    | TXDESC_0_LS
+                    | TXDESC_0_CIC1
+                    | TXDESC_0_CIC2,
+            );
         }
         TxDescriptor { desc }
     }
@@ -79,6 +90,11 @@ impl TxDescriptor {
             self.desc.modify(1, |w| {
                 (w & !TXDESC_1_TBS_MASK) | ((len as u32) << TXDESC_1_TBS_SHIFT)
             });
+            self.desc.modify(0, |w| w | TXDESC_0_CIC1 | TXDESC_0_CIC2);
+            while (self.desc.read(0) & (TXDESC_0_CIC1 | TXDESC_0_CIC2))
+                != (TXDESC_0_CIC1 | TXDESC_0_CIC2)
+            {}
+            self.desc.modify(0, |w| w | TXDESC_0_CIC1 | TXDESC_0_CIC2);
         }
     }
 
@@ -187,20 +203,7 @@ impl<'a> TxRing<'a> {
         eth_dma.dmatdlar.write(|w| w.stl().bits(ring_ptr as u32));
 
         // Start transmission
-        eth_dma.dmaomr.modify(|_, w| {
-            w.st()
-                .set_bit()
-                .ttc()
-                .ttc16()
-                .tsf()
-                .clear_bit()
-                .fef()
-                .set_bit()
-                .fugf()
-                .set_bit()
-                .osf()
-                .set_bit()
-        });
+        eth_dma.dmaomr.modify(|_, w| w.st().set_bit());
     }
 
     pub fn send<F: FnOnce(&mut [u8]) -> R, R>(

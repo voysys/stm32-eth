@@ -57,21 +57,6 @@ const PHY_ADDR: u8 = 1;
 /// From the datasheet: *VLAN Frame maxsize = 1522*
 const MTU: usize = 1522;
 
-#[allow(dead_code)]
-mod consts {
-    /* For HCLK 60-100 MHz */
-    pub const ETH_MACMIIAR_CR_HCLK_DIV_42: u8 = 0;
-    /* For HCLK 100-150 MHz */
-    pub const ETH_MACMIIAR_CR_HCLK_DIV_62: u8 = 1;
-    /* For HCLK 20-35 MHz */
-    pub const ETH_MACMIIAR_CR_HCLK_DIV_16: u8 = 2;
-    /* For HCLK 35-60 MHz */
-    pub const ETH_MACMIIAR_CR_HCLK_DIV_26: u8 = 3;
-    /* For HCLK 150-168 MHz */
-    pub const ETH_MACMIIAR_CR_HCLK_DIV_102: u8 = 4;
-}
-use self::consts::*;
-
 /// Ethernet driver for *STM32* chips.
 /// [`Phy`](phy/struct.Phy.html) can be selected via feature as:
 /// *lan8742* (e.g. on STM Nucleo-144 boards)
@@ -124,10 +109,7 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
         }
         #[cfg(feature = "stm32f4xx")]
         {
-            let clock_range = ETH_MACMIIAR_CR_HCLK_DIV_16;
-            self.eth_mac
-                .macmiiar
-                .modify(|_, w| unsafe { w.cr().bits(clock_range) });
+            self.eth_mac.macmiiar.modify(|_, w| w.cr().cr_20_35());
         }
 
         self.get_phy().reset().set_autoneg();
@@ -176,6 +158,9 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
                 .set_bit()
                 // Transmitter enable
                 .te()
+                .set_bit()
+                // Checksum offload
+                .ipco()
                 .set_bit()
         });
 
