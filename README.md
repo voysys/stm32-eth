@@ -5,11 +5,12 @@
 ## Supported microcontrollers
 
 * STM32F4xx
+* STM32F107
 
 Please send pull requests.
 
 
-## Usage
+## Usage example for the Nucleo board (stm32f429)
 
 Add to the `[dependencies]` section in your `Cargo.toml`:
 ```rust
@@ -49,11 +50,9 @@ fn main() {
     // If you have a handler, enable interrupts
     eth.enable_interrupt(&mut cp.NVIC);
 
-
     if let Ok(pkt) = eth.recv_next() {
         // handle received pkt
     }
-
 
     eth.send(size, |buf| {
         // write up to `size` bytes into buf before it is being sent
