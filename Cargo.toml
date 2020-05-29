@@ -25,8 +25,7 @@ smoltcp = { version = "0.6.0", default-features = false, features = ["proto-ipv4
 log = { version = "0.4", optional = true }
 
 [dependencies.stm32f1]
-path = "../stm32-rs/stm32f1"
-version = "*"
+git = "https://github.com/stm32-rs/stm32-rs-nightlies"
 optional = true
 
 [dependencies.stm32f1xx-hal]
