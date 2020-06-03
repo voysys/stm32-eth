@@ -29,8 +29,7 @@ git = "https://github.com/stm32-rs/stm32-rs-nightlies"
 optional = true
 
 [dependencies.stm32f1xx-hal]
-path = "../stm32f1xx-hal"
-version = "*"
+git = "https://github.com/torkeldanielsson/stm32f1xx-hal.git"
 features = ["rt", "stm32f107", "connectivity"]
 optional = true
 
